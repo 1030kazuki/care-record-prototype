@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#2E7D32">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<title>実施記録アプリ</title>
+<style>
+/* ===== リセット・基本 ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { font-size: 18px; }
+body {
+  font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+  background: #f5f5f5;
+  color: #333;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ===== 画面切替 ===== */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ===== ヘッダー ===== */
+.header {
+  background: linear-gradient(135deg, #2E7D32, #43A047);
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.header .back-btn {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.header h1 { font-size: 1.15rem; font-weight: 600; }
+
+/* ===== コンテンツ ===== */
+.content { flex: 1; padding: 16px; padding-bottom: 100px; }
+
+/* ===== ボタン共通 ===== */
+.btn {
+  display: block;
+  width: 100%;
+  padding: 18px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary {
+  background: linear-gradient(135deg, #2E7D32, #43A047);
+  color: white;
+  box-shadow: 0 4px 12px rgba(46,125,50,0.3);
+}
+.btn-secondary {
+  background: white;
+  color: #2E7D32;
+  border: 2px solid #2E7D32;
+}
+.btn-danger {
+  background: #e53935;
+  color: white;
+}
+
+/* ========================================
+   画面① ログイン
+   ======================================== */
+#screen-login {
+  background: linear-gradient(180deg, #2E7D32 0%, #1B5E20 100%);
+  justify-content: center;
+  align-items: center;
+  padding: 32px;
+}
+.login-card {
+  background: white;
+  border-radius: 24px;
+  padding: 40px 28px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+.login-logo {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.login-logo .icon {
+  width: 72px;
+  height: 72px;
+  background: linear-gradient(135deg, #2E7D32, #66BB6A);
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  margin-bottom: 12px;
+}
+.login-logo h2 {
+  font-size: 1.3rem;
+  color: #333;
+  font-weight: 700;
+}
+.login-logo p {
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 4px;
+}
+.form-group {
+  margin-bottom: 20px;
+}
+.form-group label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 8px;
+}
+.form-group select,
+.form-group input {
+  width: 100%;
+  padding: 16px;
+  font-size: 1.1rem;
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  background: #fafafa;
+  appearance: auto;
+}
+.form-group select:focus,
+.form-group input:focus {
+  border-color: #2E7D32;
+  outline: none;
+  background: white;
+}
+
+/* ========================================
+   画面② 訪問一覧
+   ======================================== */
+.date-bar {
+  background: white;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e0e0e0;
+}
+.date-bar .date {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+.date-bar .helper-name {
+  font-size: 0.9rem;
+  color: #666;
+}
+.visit-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 5px solid #2E7D32;
+}
+.visit-card:active { transform: scale(0.98); background: #f8f8f8; }
+.visit-card.done { border-left-color: #aaa; opacity: 0.7; }
+.visit-card .time-col {
+  min-width: 70px;
+  text-align: center;
+}
+.visit-card .time-col .start {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #2E7D32;
+}
+.visit-card.done .time-col .start { color: #999; }
+.visit-card .time-col .end {
+  font-size: 0.85rem;
+  color: #999;
+}
+.visit-card .info-col { flex: 1; }
+.visit-card .client-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.visit-card .service-tag {
+  display: inline-block;
+  background: #E8F5E9;
+  color: #2E7D32;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.visit-card.done .service-tag { background: #eee; color: #999; }
+.visit-card .arrow { font-size: 1.5rem; color: #ccc; }
+.visit-card .done-badge {
+  background: #4CAF50;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+.summary-bar {
+  background: white;
+  padding: 14px 20px;
+  text-align: center;
+  border-top: 1px solid #e0e0e0;
+  font-size: 0.9rem;
+  color: #666;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+.summary-bar strong { color: #2E7D32; font-size: 1.1rem; }
+
+/* ========================================
+   画面③ 実施記録入力
+   ======================================== */
+.record-header {
+  background: white;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+.record-header .client { font-size: 1.4rem; font-weight: 700; }
+.record-header .meta { font-size: 0.9rem; color: #666; margin-top: 4px; }
+.record-header .meta span { margin-right: 12px; }
+
+.section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #2E7D32;
+  margin: 20px 0 12px;
+  padding-left: 4px;
+  border-left: 4px solid #2E7D32;
+  padding-left: 10px;
+}
+
+/* 天候 */
+.weather-group {
+  display: flex;
+  gap: 10px;
+}
+.weather-btn {
+  flex: 1;
+  padding: 14px;
+  font-size: 1.2rem;
+  text-align: center;
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.weather-btn.selected {
+  border-color: #2E7D32;
+  background: #E8F5E9;
+}
+.weather-btn:active { transform: scale(0.95); }
+
+/* 指示内容 */
+.instruction-box {
+  background: #FFF8E1;
+  border: 2px solid #FFB300;
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 1rem;
+  line-height: 1.8;
+  color: #5D4037;
+  margin-bottom: 8px;
+}
+
+/* チェック項目 */
+.check-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.check-item {
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  padding: 14px 12px;
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+.check-item.checked {
+  background: #E8F5E9;
+  border-color: #2E7D32;
+  color: #2E7D32;
+}
+.check-item.checked::before {
+  content: "\2713 ";
+  font-weight: 700;
+}
+.check-item:active { transform: scale(0.95); }
+
+/* バイタル */
+.vital-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  background: white;
+  padding: 12px 16px;
+  border-radius: 12px;
+}
+.vital-row label {
+  font-size: 1rem;
+  font-weight: 600;
+  min-width: 50px;
+}
+.vital-row input {
+  width: 80px;
+  padding: 12px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-align: center;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  background: #fafafa;
+}
+.vital-row input:focus { border-color: #2E7D32; outline: none; }
+.vital-row .unit { font-size: 0.9rem; color: #888; }
+.vital-row .slash { font-size: 1.3rem; color: #999; font-weight: 700; }
+
+/* 特記事項 */
+.note-box {
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 14px;
+  padding: 16px;
+  min-height: 120px;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+.note-box:focus { border-color: #2E7D32; outline: none; }
+.ai-badge {
+  display: inline-block;
+  background: #FFF3E0;
+  color: #E65100;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+/* テンプレートボタン */
+.template-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.template-btn {
+  background: white;
+  border: 1.5px solid #ccc;
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.template-btn:active { background: #E8F5E9; border-color: #2E7D32; }
+.template-btn.added { background: #E8F5E9; border-color: #2E7D32; color: #2E7D32; }
+
+/* 音声ボタン */
+.voice-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: white;
+  border: 2px dashed #2E7D32;
+  color: #2E7D32;
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: all 0.2s;
+}
+.voice-btn:active { background: #E8F5E9; }
+.voice-btn.recording {
+  background: #FFEBEE;
+  border-color: #e53935;
+  color: #e53935;
+  animation: pulse 1s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* サ責報告 */
+.report-group {
+  display: flex;
+  gap: 8px;
+}
+.report-btn {
+  flex: 1;
+  padding: 14px;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.report-btn.selected { border-color: #2E7D32; background: #E8F5E9; color: #2E7D32; }
+.report-btn.alert.selected { border-color: #e53935; background: #FFEBEE; color: #e53935; }
+.report-btn:active { transform: scale(0.95); }
+
+.bottom-action {
+  padding: 16px;
+  position: sticky;
+  bottom: 0;
+  background: #f5f5f5;
+}
+
+/* ========================================
+   画面④ 確認
+   ======================================== */
+.confirm-section {
+  background: white;
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 12px;
+}
+.confirm-section h3 {
+  font-size: 0.85rem;
+  color: #888;
+  margin-bottom: 8px;
+}
+.confirm-section .value {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.confirm-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.confirm-tag {
+  background: #E8F5E9;
+  color: #2E7D32;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* ========================================
+   画面⑤ 完了
+   ======================================== */
+#screen-done {
+  background: linear-gradient(180deg, #E8F5E9, #f5f5f5);
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 32px;
+}
+.done-icon {
+  width: 100px;
+  height: 100px;
+  background: #4CAF50;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: white;
+  margin: 0 auto 20px;
+  box-shadow: 0 4px 20px rgba(76,175,80,0.4);
+}
+.done-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
+.done-detail { color: #666; font-size: 0.95rem; margin-bottom: 32px; line-height: 1.6; }
+.next-visit {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  text-align: left;
+}
+.next-visit .label { font-size: 0.85rem; color: #888; margin-bottom: 8px; }
+.next-visit .name { font-size: 1.2rem; font-weight: 700; }
+.next-visit .time { font-size: 1rem; color: #2E7D32; font-weight: 600; }
+.btn-group { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+</style>
+</head>
+<body>
+
+<!-- ========================================
+     画面① ログイン
+     ======================================== -->
+<div id="screen-login" class="screen active">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="icon">&#128203;</div>
+      <h2>実施記録アプリ</h2>
+      <p>ストレスケアサービス</p>
+    </div>
+    <div class="form-group">
+      <label>ヘルパー名</label>
+      <select id="login-helper">
+        <option value="">選択してください</option>
+        <option value="田村和子">田村 和子</option>
+        <option value="三浦和恵">三浦 和恵</option>
+        <option value="海老根正子">海老根 正子</option>
+        <option value="掛山千鶴">掛山 千鶴</option>
+        <option value="本多弘子">本多 弘子</option>
+        <option value="岡本宏子">岡本 宏子</option>
+        <option value="宮田忍">宮田 忍</option>
+        <option value="大森真奈江">大森 真奈江</option>
+        <option value="佐藤智香">佐藤 智香</option>
+        <option value="今野勇一">今野 勇一</option>
+        <option value="戸巻大哉">戸巻 大哉</option>
+        <option value="清水美代子">清水 美代子</option>
+        <option value="大木通子">大木 通子</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>パスワード</label>
+      <input type="password" id="login-pass" placeholder="パスワード" value="1234">
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()" style="margin-top: 8px;">ログイン</button>
+  </div>
+</div>
+
+<!-- ========================================
+     画面② 訪問一覧
+     ======================================== -->
+<div id="screen-list" class="screen">
+  <div class="header">
+    <h1>本日の訪問予定</h1>
+  </div>
+  <div class="date-bar">
+    <div>
+      <div class="date">4月5日（土）</div>
+    </div>
+    <div class="helper-name" id="list-helper-name">田村 和子</div>
+  </div>
+  <div class="content" id="visit-list">
+    <!-- JSで生成 -->
+  </div>
+  <div class="summary-bar">
+    記録済み <strong id="done-count">0</strong> / <strong id="total-count">5</strong> 件
+  </div>
+</div>
+
+<!-- ========================================
+     画面③ 実施記録入力
+     ======================================== -->
+<div id="screen-record" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="goTo('screen-list')">&#9664;</button>
+    <h1>実施記録入力</h1>
+  </div>
+  <div class="record-header">
+    <div class="client" id="rec-client">新〇克〇 様</div>
+    <div class="meta">
+      <span id="rec-date">4/5（土）</span>
+      <span id="rec-time">08:15 - 09:00</span>
+      <span id="rec-service">身体1・生活1</span>
+    </div>
+    <div class="meta">
+      <span id="rec-care-level">介護2</span>
+      <span id="rec-support-type">居宅介護</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ===== 天候（雨チェック） ===== -->
+    <div class="section-title">天候</div>
+    <div class="weather-group">
+      <div class="weather-btn selected" onclick="selectWeather(this)">&#9728;&#65039; 晴れ</div>
+      <div class="weather-btn" onclick="selectWeather(this)">&#9729;&#65039; 曇り</div>
+      <div class="weather-btn" onclick="selectWeather(this)">&#127783;&#65039; 雨</div>
+    </div>
+
+    <!-- ===== 訪問時刻 ===== -->
+    <div class="section-title">訪問時刻</div>
+    <div class="vital-row">
+      <label>開始</label>
+      <input type="time" id="actual-start" value="08:15" style="width:140px;">
+      <label style="margin-left:12px;">終了</label>
+      <input type="time" id="actual-end" value="09:00" style="width:140px;">
+    </div>
+
+    <!-- ===== 利用者の訴え ===== -->
+    <div class="section-title">利用者の訴え</div>
+    <div class="note-box" contenteditable="true" id="client-complaint" style="min-height:60px; font-size:1rem;"></div>
+    <div class="voice-btn" onclick="toggleVoiceFor('client-complaint')" style="margin-top:6px; padding:10px; font-size:0.9rem;">&#127908; 音声で入力</div>
+
+    <!-- ===== 記入区分 ===== -->
+    <div class="section-title">※記入区分</div>
+    <div class="weather-group">
+      <div class="weather-btn selected" onclick="selectKinyuKubun(this)" style="font-size:1rem;">&#10003; 実施</div>
+      <div class="weather-btn" onclick="selectKinyuKubun(this)" style="font-size:0.85rem;">&#9746; 支援内容に不足あり</div>
+    </div>
+    <div id="fusoku-count-row" style="display:none; margin-top:8px;">
+      <div class="vital-row">
+        <label style="font-size:0.9rem;">報告数</label>
+        <input type="number" id="fusoku-count" placeholder="0" inputmode="numeric" style="width:60px;">
+      </div>
+    </div>
+
+    <!-- ============================================
+         身の回り（全項目を個別ボタンで表示）
+         ============================================ -->
+    <div class="section-title">身の回り</div>
+    <div class="check-grid" id="body-checks">
+      <div class="check-item" onclick="toggleCheck(this)">寝返り</div>
+      <div class="check-item" onclick="toggleCheck(this)">起き上がり</div>
+      <div class="check-item" onclick="toggleCheck(this)">立ち上がり</div>
+      <div class="check-item" onclick="toggleCheck(this)">移動</div>
+      <div class="check-item" onclick="toggleCheck(this)">移乗</div>
+      <div class="check-item" onclick="toggleCheck(this)">更衣（上）</div>
+      <div class="check-item" onclick="toggleCheck(this)">更衣（下）</div>
+      <div class="check-item" onclick="toggleCheck(this)">食事</div>
+      <div class="check-item" onclick="toggleCheck(this)">飲水</div>
+      <div class="check-item" onclick="toggleCheck(this)">内服</div>
+      <div class="check-item" onclick="toggleCheck(this)">軟膏</div>
+      <div class="check-item" onclick="toggleCheck(this)">整容（口腔）</div>
+      <div class="check-item" onclick="toggleCheck(this)">整容（爪）</div>
+      <div class="check-item" onclick="toggleCheck(this)">整容（耳）</div>
+      <div class="check-item" onclick="toggleCheck(this)">整容（髭）</div>
+      <div class="check-item" onclick="toggleCheck(this)">整容（髪）</div>
+    </div>
+
+    <!-- 入浴・清拭 -->
+    <div class="check-grid" id="bath-checks" style="margin-top:12px;">
+      <div class="check-item" onclick="toggleCheck(this)">入浴</div>
+      <div class="check-item" onclick="toggleCheck(this)">シャワー</div>
+      <div class="check-item" onclick="toggleCheck(this)">洗髪</div>
+      <div class="check-item" onclick="toggleCheck(this)">手・足浴</div>
+      <div class="check-item" onclick="toggleCheck(this)">清拭（全）</div>
+      <div class="check-item" onclick="toggleCheck(this)">清拭（部分）</div>
+    </div>
+
+    <!-- 排泄 -->
+    <div class="check-grid" id="toilet-checks" style="margin-top:12px;">
+      <div class="check-item" onclick="toggleCheck(this)">排尿・便</div>
+      <div class="check-item" onclick="toggleCheck(this)">パット</div>
+      <div class="check-item" onclick="toggleCheck(this)">オムツ</div>
+      <div class="check-item" onclick="toggleCheck(this)">リハパン</div>
+      <div class="check-item" onclick="toggleCheck(this)">陰洗</div>
+    </div>
+
+    <!-- ひびリハ® -->
+    <div class="check-grid" id="hibiriha-flag-checks" style="margin-top:12px;">
+      <div class="check-item" onclick="toggleCheck(this)">ひびリハ（意欲関心）</div>
+      <div class="check-item" onclick="toggleCheck(this)">ひびリハ（自立支援）</div>
+      <div class="check-item" onclick="toggleCheck(this)">ひびリハ（共に）</div>
+    </div>
+
+    <!-- ============================================
+         家事
+         ============================================ -->
+    <div class="section-title">家事</div>
+
+    <!-- ひびリハ®（共に行う身体介護） -->
+    <div style="font-size:0.85rem; color:#555; margin-bottom:6px; font-weight:600;">ひびリハ®（共に行う身体介護）</div>
+    <div class="check-grid" id="hibiriha-checks">
+      <div class="check-item" onclick="toggleCheck(this)">調理</div>
+      <div class="check-item" onclick="toggleCheck(this)">買い物</div>
+      <div class="check-item" onclick="toggleCheck(this)">掃除</div>
+      <div class="check-item" onclick="toggleCheck(this)">洗濯</div>
+      <div class="check-item" onclick="toggleCheck(this)">片付け</div>
+    </div>
+
+    <!-- 生活援助 -->
+    <div style="font-size:0.85rem; color:#555; margin:12px 0 6px; font-weight:600;">生活援助</div>
+    <div class="check-grid" id="life-checks">
+      <div class="check-item" onclick="toggleCheck(this)">調理</div>
+      <div class="check-item" onclick="toggleCheck(this)">買い物</div>
+      <div class="check-item" onclick="toggleCheck(this)">掃除</div>
+      <div class="check-item" onclick="toggleCheck(this)">洗濯</div>
+      <div class="check-item" onclick="toggleCheck(this)">片付け</div>
+    </div>
+
+    <!-- ============================================
+         転倒計測（ADLレベル 1〜7）
+         ============================================ -->
+    <div class="section-title">転倒計測</div>
+    <div class="vital-row">
+      <label>肩幅</label>
+      <span class="unit">ADLレベル</span>
+      <select id="adl-shoulder" style="padding:10px; font-size:1.1rem; font-weight:700; border:2px solid #ddd; border-radius:10px; background:white; min-width:70px; text-align:center;">
+        <option value="">( )</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+      </select>
+    </div>
+    <div class="vital-row">
+      <label>閉脚</label>
+      <span class="unit">ADLレベル</span>
+      <select id="adl-closedleg" style="padding:10px; font-size:1.1rem; font-weight:700; border:2px solid #ddd; border-radius:10px; background:white; min-width:70px; text-align:center;">
+        <option value="">( )</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+      </select>
+    </div>
+    <div class="vital-row">
+      <label>片脚立位</label>
+      <span class="unit">ADLレベル</span>
+      <select id="adl-oneleg" style="padding:10px; font-size:1.1rem; font-weight:700; border:2px solid #ddd; border-radius:10px; background:white; min-width:70px; text-align:center;">
+        <option value="">( )</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+      </select>
+    </div>
+    <div class="vital-row">
+      <label>測定結果</label>
+      <div class="weather-group" style="flex:1; gap:6px;">
+        <div class="weather-btn" onclick="selectMeasure(this)" style="font-size:0.9rem; padding:10px;">良：15秒静止</div>
+        <div class="weather-btn" onclick="selectMeasure(this)" style="font-size:0.9rem; padding:10px;">不可：14秒以下</div>
+      </div>
+    </div>
+
+    <!-- ============================================
+         買い物（預金・購入・残金・内訳）
+         ============================================ -->
+    <div class="section-title">買い物</div>
+    <div class="vital-row">
+      <label>預金</label>
+      <input type="number" id="shop-deposit" placeholder="0" inputmode="numeric" style="width:100px;">
+      <span class="unit">円</span>
+    </div>
+    <div class="vital-row">
+      <label>購入</label>
+      <input type="number" id="shop-purchase" placeholder="0" inputmode="numeric" style="width:100px;">
+      <span class="unit">円</span>
+    </div>
+    <div class="vital-row">
+      <label>残金</label>
+      <input type="number" id="shop-balance" placeholder="0" inputmode="numeric" style="width:100px;">
+      <span class="unit">円</span>
+    </div>
+    <div class="vital-row" style="flex-wrap:wrap;">
+      <label>内訳</label>
+      <div class="note-box" contenteditable="true" id="shop-detail" style="min-height:40px; font-size:0.95rem; flex:1; min-width:200px;"></div>
+    </div>
+    <div class="voice-btn" onclick="toggleVoiceFor('shop-detail')" style="margin-top:6px; padding:10px; font-size:0.9rem;">&#127908; 内訳を音声で入力</div>
+
+    <!-- ============================================
+         指示（サ責からの指示内容）
+         ============================================ -->
+    <div class="section-title">指示</div>
+    <div class="instruction-box" id="instruction-box">
+      身体介護：移動介助、口腔ケア、排泄介助<br>
+      生活援助：昼食の調理、居室の掃除<br>
+      注意事項：左膝に痛みあり、移動時は手引き歩行で対応
+    </div>
+
+    <!-- ============================================
+         バイタル（血圧・脈・体温・SpO2）
+         ============================================ -->
+    <div class="section-title">バイタル</div>
+    <div class="vital-row">
+      <label>血圧</label>
+      <input type="number" id="bp-sys" placeholder="上" inputmode="numeric">
+      <span class="slash">/</span>
+      <input type="number" id="bp-dia" placeholder="下" inputmode="numeric">
+      <span class="unit">mmHg</span>
+    </div>
+    <div class="vital-row">
+      <label>脈</label>
+      <input type="number" id="pulse" placeholder="70" inputmode="numeric">
+      <span class="unit">回/分</span>
+    </div>
+    <div class="vital-row">
+      <label>体温</label>
+      <input type="number" id="temp" placeholder="36.5" step="0.1" inputmode="decimal">
+      <span class="unit">&deg;C</span>
+    </div>
+    <div class="vital-row">
+      <label>SpO2</label>
+      <input type="number" id="spo2" placeholder="97" inputmode="numeric">
+      <span class="unit">%</span>
+    </div>
+
+    <!-- ============================================
+         報告
+         ============================================ -->
+    <div class="section-title">報告</div>
+    <div class="report-group">
+      <div class="report-btn selected" onclick="selectReport(this, false)">特になし</div>
+      <div class="report-btn" onclick="selectReport(this, true)">要相談</div>
+      <div class="report-btn alert" onclick="selectReport(this, true)">緊急報告</div>
+    </div>
+    <div id="report-detail" style="display:none; margin-top:12px;">
+      <div class="note-box" contenteditable="true" id="report-text" style="min-height:80px;"></div>
+      <div class="voice-btn" onclick="toggleVoiceFor('report-text')" style="margin-top:8px; padding:10px; font-size:0.9rem;">&#127908; 音声で入力</div>
+    </div>
+
+    <!-- ============================================
+         留意事項・特記事項
+         （転倒、体調変化など、前回と異なる点）
+         ============================================ -->
+    <div class="section-title">
+      留意事項・特記事項
+      <span class="ai-badge">AI自動生成</span>
+    </div>
+    <div style="font-size:0.8rem; color:#888; margin-bottom:6px;">（転倒、体調変化など、前回と異なる点）</div>
+    <div class="note-box" contenteditable="true" id="note-text">前回同様、落ち着いて過ごされている。室内の片付けは奥様と協力して対応。移動時のふらつきなく、口腔ケアも問題なく実施。</div>
+
+    <div class="template-group">
+      <div class="template-btn" onclick="addTemplate(this, '安定している。')">安定している</div>
+      <div class="template-btn" onclick="addTemplate(this, '穏やかに過ごされている。')">穏やかに過ごす</div>
+      <div class="template-btn" onclick="addTemplate(this, '食欲あり。')">食欲あり</div>
+      <div class="template-btn" onclick="addTemplate(this, '食欲低下気味。')">食欲低下</div>
+      <div class="template-btn" onclick="addTemplate(this, 'ふらつきあり。')">ふらつきあり</div>
+      <div class="template-btn" onclick="addTemplate(this, '痛みの訴えあり。')">痛みの訴え</div>
+      <div class="template-btn" onclick="addTemplate(this, '笑顔が見られた。')">笑顔あり</div>
+      <div class="template-btn" onclick="addTemplate(this, '元気がない様子。')">元気がない</div>
+      <div class="template-btn" onclick="addTemplate(this, '転倒あり。')">転倒あり</div>
+      <div class="template-btn" onclick="addTemplate(this, '体調変化あり。')">体調変化</div>
+    </div>
+
+    <div class="voice-btn" id="voice-btn" onclick="toggleVoice()">
+      &#127908; 音声で追記する
+    </div>
+
+    <div style="height: 20px;"></div>
+  </div>
+
+  <div class="bottom-action">
+    <button class="btn btn-primary" onclick="goToConfirm()">確認画面へ &#9654;</button>
+  </div>
+</div>
+
+<!-- ========================================
+     画面④ 確認・送信
+     ======================================== -->
+<div id="screen-confirm" class="screen">
+  <div class="header">
+    <button class="back-btn" onclick="goTo('screen-record')">&#9664;</button>
+    <h1>送信内容の確認</h1>
+  </div>
+  <div class="content">
+    <div class="confirm-section">
+      <h3>利用者・日時</h3>
+      <div class="value" id="cf-client">新〇克〇 様</div>
+      <div style="color:#666; margin-top:4px;">
+        <span id="cf-date">4/5（土）</span>
+        <span id="cf-time" style="margin-left:12px;">08:15 - 09:00</span>
+      </div>
+      <div style="color:#666; margin-top:2px;">
+        <span id="cf-service">身体1・生活1</span>
+        <span id="cf-weather" style="margin-left:12px;"></span>
+      </div>
+    </div>
+
+    <div class="confirm-section">
+      <h3>利用者の訴え</h3>
+      <div id="cf-complaint" class="value">なし</div>
+    </div>
+
+    <div class="confirm-section">
+      <h3>サービス内容</h3>
+      <div class="confirm-tags" id="cf-checks"></div>
+    </div>
+
+    <div class="confirm-section">
+      <h3>転倒計測（ADLレベル）</h3>
+      <div class="value" id="cf-adl">未測定</div>
+    </div>
+
+    <div class="confirm-section">
+      <h3>バイタル</h3>
+      <div class="value" id="cf-vitals"></div>
+    </div>
+
+    <div class="confirm-section">
+      <h3>留意事項・特記事項</h3>
+      <div id="cf-notes" style="line-height:1.7;"></div>
+    </div>
+
+    <div class="confirm-section">
+      <h3>サ責への報告</h3>
+      <div id="cf-report" class="value">特になし</div>
+    </div>
+
+    <div style="height: 12px;"></div>
+    <button class="btn btn-secondary" onclick="goTo('screen-record')" style="margin-bottom:12px;">&#9664; 修正する</button>
+    <button class="btn btn-primary" onclick="doSubmit()">&#10004; 送信する</button>
+  </div>
+</div>
+
+<!-- ========================================
+     画面⑤ 送信完了
+     ======================================== -->
+<div id="screen-done" class="screen">
+  <div class="done-icon">&#10004;</div>
+  <div class="done-title">送信完了</div>
+  <div class="done-detail">
+    <span id="done-client">新〇克〇 様</span><br>
+    <span id="done-time">08:15 - 09:00</span> の記録を送信しました
+  </div>
+  <div class="next-visit" id="next-visit-card" style="width:100%;">
+    <div class="label">次の訪問</div>
+    <div class="name" id="next-client">蔡〇好〇 様</div>
+    <div class="time" id="next-time">09:40 - 10:25</div>
+  </div>
+  <div class="btn-group">
+    <button class="btn btn-primary" onclick="goToNextRecord()">次の記録へ &#9654;</button>
+    <button class="btn btn-secondary" onclick="goTo('screen-list')">一覧に戻る</button>
+  </div>
+</div>
+
+<script>
+// ===== データ =====
+const VISITS = [
+  { id: 0, client: "新〇克〇 様", start: "08:15", end: "09:00", service: "身体1・生活1", careLevel: "介護2", supportType: "居宅介護", done: false,
+    instruction: "身体介護：移動介助、口腔ケア、排泄介助\n生活援助：昼食の調理、居室の掃除\n注意事項：左膝に痛みあり、移動時は手引き歩行で対応" },
+  { id: 1, client: "蔡〇好〇 様", start: "09:40", end: "10:25", service: "身体2・生活1", careLevel: "介護3", supportType: "居宅介護", done: false,
+    instruction: "身体介護：移乗介助、更衣介助（上下）、排泄介助、入浴介助\n生活援助：掃除（居室・トイレ）\n注意事項：車椅子使用、移乗時は声かけを丁寧に" },
+  { id: 2, client: "中〇茂〇 様", start: "10:30", end: "11:45", service: "身体2", careLevel: "介護2", supportType: "居宅介護", done: false,
+    instruction: "身体介護：入浴介助（シャワー浴）、更衣介助、整容\n注意事項：血圧高めの傾向あり、入浴前に必ずバイタル測定" },
+  { id: 3, client: "金光〇〇 様", start: "14:30", end: "15:30", service: "生活3", careLevel: "支援2", supportType: "総合事業", done: false,
+    instruction: "生活援助：調理（夕食の下ごしらえ含む）、洗濯（干す・取り込み）、居室の掃除\n注意事項：冷蔵庫内の賞味期限切れ確認もお願いします" },
+  { id: 4, client: "鍛元〇〇 様", start: "15:30", end: "17:00", service: "身体3・生活1", careLevel: "介護4", supportType: "居宅介護", done: false,
+    instruction: "身体介護：移動介助、移乗介助、排泄介助、入浴介助（シャワー浴）、更衣介助\n生活援助：居室の掃除\n注意事項：右片麻痺あり、移乗時は健側から。転倒リスク高いため見守り徹底" },
+];
+
+const AI_NOTES = {
+  0: "前回同様、落ち着いて過ごされている。室内の片付けは奥様と協力して対応。移動時のふらつきなく、口腔ケアも問題なく実施。",
+  1: "穏やかに過ごされている。食事量も安定しており、入浴も問題なく実施できた。",
+  2: "安定して過ごされている。排泄の訴えがあり、トイレ誘導にて対応。更衣も自力で可能。",
+  3: "元気に過ごされている。調理は本人の希望に沿ってメニューを決定。掃除・洗濯も実施。",
+  4: "前回と変わりなく安定。入浴介助にて全身清潔保持。食欲良好、内服確認済み。",
+};
+
+const PREDICTED_CHECKS = {
+  0: { "body-checks": ["移動", "整容（口腔）"], "bath-checks": [], "toilet-checks": ["排尿・便"], "hibiriha-flag-checks": [], "hibiriha-checks": [], "life-checks": ["調理", "掃除"] },
+  1: { "body-checks": ["移乗", "更衣（上）", "更衣（下）"], "bath-checks": ["入浴"], "toilet-checks": ["排尿・便"], "hibiriha-flag-checks": [], "hibiriha-checks": [], "life-checks": ["掃除"] },
+  2: { "body-checks": ["更衣（上）", "更衣（下）", "整容（口腔）", "整容（髪）"], "bath-checks": ["シャワー", "洗髪"], "toilet-checks": [], "hibiriha-flag-checks": [], "hibiriha-checks": [], "life-checks": [] },
+  3: { "body-checks": [], "bath-checks": [], "toilet-checks": [], "hibiriha-flag-checks": [], "hibiriha-checks": [], "life-checks": ["調理", "掃除", "洗濯"] },
+  4: { "body-checks": ["移動", "移乗", "更衣（上）", "更衣（下）", "食事", "整容（口腔）"], "bath-checks": ["シャワー"], "toilet-checks": ["排尿・便"], "hibiriha-flag-checks": [], "hibiriha-checks": [], "life-checks": ["掃除"] },
+};
+
+let currentVisitId = 0;
+let helperName = "";
+
+// ===== 画面遷移 =====
+function goTo(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ===== 画面① ログイン =====
+function doLogin() {
+  const sel = document.getElementById('login-helper');
+  if (!sel.value) { alert('ヘルパー名を選択してください'); return; }
+  helperName = sel.value;
+  document.getElementById('list-helper-name').textContent = helperName;
+  renderVisitList();
+  goTo('screen-list');
+}
+
+// ===== 画面② 訪問一覧 =====
+function renderVisitList() {
+  const container = document.getElementById('visit-list');
+  container.innerHTML = '';
+  VISITS.forEach((v, i) => {
+    const card = document.createElement('div');
+    card.className = 'visit-card' + (v.done ? ' done' : '');
+    card.onclick = () => openRecord(v.id);
+    card.innerHTML = `
+      <div class="time-col">
+        <div class="start">${v.start}</div>
+        <div class="end">${v.end}</div>
+      </div>
+      <div class="info-col">
+        <div class="client-name">${v.client}</div>
+        <span class="service-tag">${v.service}</span>
+      </div>
+      ${v.done ? '<span class="done-badge">送信済</span>' : '<span class="arrow">&#9654;</span>'}
+    `;
+    container.appendChild(card);
+  });
+  const doneCount = VISITS.filter(v => v.done).length;
+  document.getElementById('done-count').textContent = doneCount;
+  document.getElementById('total-count').textContent = VISITS.length;
+}
+
+// ===== 画面③ 記録入力 =====
+function openRecord(id) {
+  currentVisitId = id;
+  const v = VISITS[id];
+
+  document.getElementById('rec-client').textContent = v.client;
+  document.getElementById('rec-date').textContent = '4/5（土）';
+  document.getElementById('rec-time').textContent = v.start + ' - ' + v.end;
+  document.getElementById('rec-service').textContent = v.service;
+  document.getElementById('rec-care-level').textContent = v.careLevel;
+  document.getElementById('rec-support-type').textContent = v.supportType;
+  document.getElementById('instruction-box').innerHTML = (v.instruction || '').replace(/\n/g, '<br>');
+  document.getElementById('actual-start').value = v.start;
+  document.getElementById('actual-end').value = v.end;
+  document.getElementById('note-text').textContent = AI_NOTES[id] || '';
+
+  // チェック項目リセット・予測ON
+  const pred = PREDICTED_CHECKS[id] || {};
+  const allSections = ['body-checks', 'bath-checks', 'toilet-checks', 'hibiriha-flag-checks', 'hibiriha-checks', 'life-checks'];
+  allSections.forEach(sectionId => {
+    const predList = pred[sectionId] || [];
+    document.querySelectorAll('#' + sectionId + ' .check-item').forEach(el => {
+      const label = el.textContent.replace(/^\u2713 /, '');
+      el.classList.toggle('checked', predList.includes(label));
+    });
+  });
+
+  // 利用者の訴えリセット
+  document.getElementById('client-complaint').textContent = '';
+
+  // 記入区分リセット（実施を選択）
+  const kubunBtns = document.querySelectorAll('#screen-record .weather-group')[1];
+  if (kubunBtns) {
+    kubunBtns.querySelectorAll('.weather-btn').forEach((b, i) => {
+      b.classList.toggle('selected', i === 0);
+    });
+  }
+  document.getElementById('fusoku-count-row').style.display = 'none';
+
+  // 転倒計測リセット
+  document.getElementById('adl-shoulder').value = '';
+  document.getElementById('adl-closedleg').value = '';
+  document.getElementById('adl-oneleg').value = '';
+
+  // 買い物リセット
+  document.getElementById('shop-deposit').value = '';
+  document.getElementById('shop-purchase').value = '';
+  document.getElementById('shop-balance').value = '';
+  document.getElementById('shop-detail').textContent = '';
+
+  // テンプレートリセット
+  document.querySelectorAll('.template-btn').forEach(b => b.classList.remove('added'));
+
+  // バイタルリセット
+  document.getElementById('bp-sys').value = '';
+  document.getElementById('bp-dia').value = '';
+  document.getElementById('temp').value = '';
+  document.getElementById('pulse').value = '';
+  document.getElementById('spo2').value = '';
+
+  // 報告リセット
+  document.querySelectorAll('.report-btn').forEach((b, i) => {
+    b.classList.toggle('selected', i === 0);
+  });
+  document.getElementById('report-detail').style.display = 'none';
+
+  goTo('screen-record');
+}
+
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+}
+
+function selectWeather(el) {
+  el.parentElement.querySelectorAll('.weather-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function addTemplate(el, text) {
+  const noteEl = document.getElementById('note-text');
+  if (el.classList.contains('added')) {
+    el.classList.remove('added');
+  } else {
+    el.classList.add('added');
+    noteEl.textContent = noteEl.textContent.trim() + ' ' + text;
+  }
+}
+
+// ===== 音声入力（Web Speech API） =====
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let activeRecognition = null;
+let activeVoiceBtn = null;
+let activeTargetEl = null;
+
+function startSpeechRecognition(btnEl, targetEl) {
+  // 既に録音中なら停止
+  if (activeRecognition && activeVoiceBtn === btnEl) {
+    activeRecognition.stop();
+    return;
+  }
+  // 別の録音が動いていたら先に停止
+  if (activeRecognition) {
+    activeRecognition.stop();
+  }
+
+  if (!SpeechRecognition) {
+    alert('お使いのブラウザは音声入力に対応していません。\nChromeまたはSafariをお使いください。');
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'ja-JP';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  activeRecognition = recognition;
+  activeVoiceBtn = btnEl;
+  activeTargetEl = targetEl;
+
+  // UI: 録音中表示
+  btnEl.classList.add('recording');
+  btnEl.setAttribute('data-original-text', btnEl.innerHTML);
+  btnEl.innerHTML = '&#128308; 録音中... タップで停止';
+
+  let finalTranscript = '';
+  let interimTranscript = '';
+
+  recognition.onresult = function(event) {
+    interimTranscript = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) {
+        finalTranscript += event.results[i][0].transcript;
+      } else {
+        interimTranscript += event.results[i][0].transcript;
+      }
+    }
+    // リアルタイムプレビュー：確定テキスト + 認識中テキスト（薄い色）
+    const existing = targetEl.getAttribute('data-before-voice') || targetEl.textContent.trim();
+    const separator = existing ? ' ' : '';
+    if (interimTranscript) {
+      targetEl.innerHTML = existing + separator + finalTranscript + '<span style="color:#999;">' + interimTranscript + '</span>';
+    } else {
+      targetEl.textContent = existing + separator + finalTranscript;
+    }
+  };
+
+  recognition.onstart = function() {
+    // 録音開始前のテキストを保存
+    targetEl.setAttribute('data-before-voice', targetEl.textContent.trim());
+  };
+
+  recognition.onend = function() {
+    // 確定テキストを反映
+    const existing = targetEl.getAttribute('data-before-voice') || '';
+    const separator = existing ? ' ' : '';
+    targetEl.textContent = existing + (finalTranscript ? separator + finalTranscript : '');
+    targetEl.removeAttribute('data-before-voice');
+
+    // UI: 元に戻す
+    btnEl.classList.remove('recording');
+    btnEl.innerHTML = btnEl.getAttribute('data-original-text') || '&#127908; 音声で入力';
+    activeRecognition = null;
+    activeVoiceBtn = null;
+    activeTargetEl = null;
+  };
+
+  recognition.onerror = function(event) {
+    console.log('Speech recognition error:', event.error);
+    if (event.error === 'not-allowed') {
+      alert('マイクの使用が許可されていません。\nブラウザの設定でマイクを許可してください。');
+    }
+    recognition.stop();
+  };
+
+  recognition.start();
+}
+
+// 特記事項用（voice-btn）
+function toggleVoice() {
+  const btn = document.getElementById('voice-btn');
+  const target = document.getElementById('note-text');
+  startSpeechRecognition(btn, target);
+}
+
+// 汎用（利用者の訴え、買い物内訳、報告）
+function toggleVoiceFor(targetId) {
+  // ボタン要素を特定（targetIdの近くにあるvoice-btn）
+  const targetEl = document.getElementById(targetId);
+  // クリックされたボタンを取得（イベント経由）
+  const btnEl = event.currentTarget;
+  startSpeechRecognition(btnEl, targetEl);
+}
+
+function selectKinyuKubun(el) {
+  el.parentElement.querySelectorAll('.weather-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  const isFusoku = el.textContent.includes('不足');
+  document.getElementById('fusoku-count-row').style.display = isFusoku ? 'block' : 'none';
+}
+
+function selectMeasure(el) {
+  el.parentElement.querySelectorAll('.weather-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function selectReport(el, showDetail) {
+  el.parentElement.querySelectorAll('.report-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('report-detail').style.display = showDetail ? 'block' : 'none';
+}
+
+// ===== 画面④ 確認 =====
+function goToConfirm() {
+  const v = VISITS[currentVisitId];
+  document.getElementById('cf-client').textContent = v.client;
+  document.getElementById('cf-date').textContent = '4/5（土）';
+  document.getElementById('cf-time').textContent =
+    document.getElementById('actual-start').value + ' - ' + document.getElementById('actual-end').value;
+  document.getElementById('cf-service').textContent = v.service;
+
+  const weather = document.querySelector('.weather-btn.selected');
+  document.getElementById('cf-weather').textContent = weather ? weather.textContent : '';
+
+  // チェック項目
+  const checks = [];
+  document.querySelectorAll('.check-item.checked').forEach(el => {
+    checks.push(el.textContent.replace(/^\u2713 /, ''));
+  });
+  const cfChecks = document.getElementById('cf-checks');
+  cfChecks.innerHTML = checks.map(c => `<span class="confirm-tag">${c}</span>`).join('');
+
+  // 利用者の訴え
+  const complaint = document.getElementById('client-complaint').textContent.trim();
+  const cfComplaint = document.getElementById('cf-complaint');
+  if (cfComplaint) cfComplaint.textContent = complaint || 'なし';
+
+  // バイタル
+  const bpS = document.getElementById('bp-sys').value;
+  const bpD = document.getElementById('bp-dia').value;
+  const temp = document.getElementById('temp').value;
+  const pulse = document.getElementById('pulse').value;
+  const spo2 = document.getElementById('spo2').value;
+  let vitals = [];
+  if (bpS && bpD) vitals.push(`血圧 ${bpS}/${bpD}`);
+  if (pulse) vitals.push(`脈 ${pulse}回/分`);
+  if (temp) vitals.push(`体温 ${temp}\u00B0C`);
+  if (spo2) vitals.push(`SpO2 ${spo2}%`);
+  document.getElementById('cf-vitals').textContent = vitals.join('  ') || '未入力';
+
+  // 転倒計測
+  const adlS = document.getElementById('adl-shoulder').value;
+  const adlC = document.getElementById('adl-closedleg').value;
+  const adlO = document.getElementById('adl-oneleg').value;
+  let adlParts = [];
+  if (adlS) adlParts.push(`肩幅:${adlS}`);
+  if (adlC) adlParts.push(`閉脚:${adlC}`);
+  if (adlO) adlParts.push(`片脚立位:${adlO}`);
+  const cfAdl = document.getElementById('cf-adl');
+  if (cfAdl) cfAdl.textContent = adlParts.length ? adlParts.join('  ') : '未測定';
+
+  // 特記事項
+  document.getElementById('cf-notes').textContent = document.getElementById('note-text').textContent;
+
+  // サ責報告
+  const report = document.querySelector('.report-btn.selected');
+  let reportText = report ? report.textContent : '特になし';
+  if (document.getElementById('report-detail').style.display !== 'none') {
+    const detail = document.getElementById('report-text').textContent;
+    if (detail) reportText += '：' + detail;
+  }
+  document.getElementById('cf-report').textContent = reportText;
+
+  goTo('screen-confirm');
+}
+
+// ===== 画面⑤ 送信完了 =====
+function doSubmit() {
+  const v = VISITS[currentVisitId];
+  v.done = true;
+
+  document.getElementById('done-client').textContent = v.client;
+  document.getElementById('done-time').textContent =
+    document.getElementById('actual-start').value + ' - ' + document.getElementById('actual-end').value;
+
+  // 次の訪問
+  const nextVisit = VISITS.find(vi => !vi.done && vi.id !== currentVisitId);
+  const nextCard = document.getElementById('next-visit-card');
+  if (nextVisit) {
+    nextCard.style.display = 'block';
+    document.getElementById('next-client').textContent = nextVisit.client;
+    document.getElementById('next-time').textContent = nextVisit.start + ' - ' + nextVisit.end;
+  } else {
+    nextCard.style.display = 'none';
+  }
+
+  goTo('screen-done');
+}
+
+function goToNextRecord() {
+  const nextVisit = VISITS.find(v => !v.done);
+  if (nextVisit) {
+    openRecord(nextVisit.id);
+  } else {
+    goTo('screen-list');
+    renderVisitList();
+  }
+}
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW registration failed:', e));
+}
+</script>
+</body>
+</html>
