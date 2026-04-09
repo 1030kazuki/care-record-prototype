@@ -1549,9 +1549,11 @@ function actionRecord() {
 }
 
 function actionCancel() {
-  closeActionSheet();
+  const visitId = actionSheetVisitId; // 先にIDを保存
+  closeActionSheet(); // ここでactionSheetVisitIdがnullになる
   // キャンセルシートを表示
-  const v = VISITS[actionSheetVisitId];
+  const v = VISITS[visitId];
+  actionSheetVisitId = visitId; // IDを復元（confirmCancelで使う）
   document.getElementById('cancel-sheet-subtitle').textContent = v.client + '（' + v.start + ' - ' + v.end + '）';
   document.getElementById('cancel-memo-sheet').textContent = '';
   document.querySelectorAll('#cancel-sheet .cancel-reason-btn').forEach(b => b.classList.remove('selected'));
