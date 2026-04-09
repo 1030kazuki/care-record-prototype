@@ -883,32 +883,48 @@ body {
       <h2>実施記録アプリ</h2>
       <p>ストレスケアサービス</p>
     </div>
-    <div class="form-group">
-      <label>ヘルパー名</label>
-      <select id="login-helper">
-        <option value="">選択してください</option>
-        <option value="田村和子">田村 和子</option>
-        <option value="三浦和恵">三浦 和恵</option>
-        <option value="海老根正子">海老根 正子</option>
-        <option value="掛山千鶴">掛山 千鶴</option>
-        <option value="本多弘子">本多 弘子</option>
-        <option value="岡本宏子">岡本 宏子</option>
-        <option value="宮田忍">宮田 忍</option>
-        <option value="大森真奈江">大森 真奈江</option>
-        <option value="佐藤智香">佐藤 智香</option>
-        <option value="今野勇一">今野 勇一</option>
-        <option value="戸巻大哉">戸巻 大哉</option>
-        <option value="清水美代子">清水 美代子</option>
-        <option value="大木通子">大木 通子</option>
-      </select>
+    <!-- ヘルパー用フォーム -->
+    <div id="login-helper-form">
+      <div class="form-group">
+        <label>ヘルパー名</label>
+        <select id="login-helper">
+          <option value="">選択してください</option>
+          <option value="田村和子">田村 和子</option>
+          <option value="三浦和恵">三浦 和恵</option>
+          <option value="海老根正子">海老根 正子</option>
+          <option value="掛山千鶴">掛山 千鶴</option>
+          <option value="本多弘子">本多 弘子</option>
+          <option value="岡本宏子">岡本 宏子</option>
+          <option value="宮田忍">宮田 忍</option>
+          <option value="大森真奈江">大森 真奈江</option>
+          <option value="佐藤智香">佐藤 智香</option>
+          <option value="今野勇一">今野 勇一</option>
+          <option value="戸巻大哉">戸巻 大哉</option>
+          <option value="清水美代子">清水 美代子</option>
+          <option value="大木通子">大木 通子</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>パスワード</label>
+        <input type="password" id="login-pass" placeholder="パスワード" value="1234">
+      </div>
     </div>
-    <div class="form-group">
-      <label>パスワード</label>
-      <input type="password" id="login-pass" placeholder="パスワード" value="1234">
+
+    <!-- 管理者用フォーム（初期非表示） -->
+    <div id="login-admin-form" style="display:none;">
+      <div class="form-group">
+        <label>管理者ID</label>
+        <input type="text" id="admin-id" placeholder="管理者ID">
+      </div>
+      <div class="form-group">
+        <label>パスワード</label>
+        <input type="password" id="admin-pass" placeholder="パスワード">
+      </div>
     </div>
+
     <div class="form-group" style="margin-top:4px;">
       <label style="display:flex; align-items: center; gap:8px; cursor:pointer;">
-        <input type="checkbox" id="login-admin" style="width:auto; padding:0; transform:scale(1.3);">
+        <input type="checkbox" id="login-admin" onchange="toggleLoginForm()" style="width:auto; padding:0; transform:scale(1.3);">
         <span style="font-size:0.85rem; color:#E65100;">管理者としてログイン</span>
       </label>
     </div>
@@ -1471,11 +1487,35 @@ function goTo(screenId) {
 }
 
 // ===== 画面① ログイン =====
+const ADMIN_CREDENTIALS = { id: 'admin', password: 'norden2026' };
+
+function toggleLoginForm() {
+  const isAdmin = document.getElementById('login-admin').checked;
+  document.getElementById('login-helper-form').style.display = isAdmin ? 'none' : 'block';
+  document.getElementById('login-admin-form').style.display = isAdmin ? 'block' : 'none';
+}
+
 function doLogin() {
-  const sel = document.getElementById('login-helper');
-  if (!sel.value) { alert('ヘルパー名を選択してください'); return; }
-  helperName = sel.value;
-  isAdminMode = document.getElementById('login-admin').checked;
+  const isAdmin = document.getElementById('login-admin').checked;
+
+  if (isAdmin) {
+    // 管理者ログイン
+    const inputId = document.getElementById('admin-id').value.trim();
+    const inputPass = document.getElementById('admin-pass').value;
+    if (!inputId || !inputPass) { alert('管理者IDとパスワードを入力してください'); return; }
+    if (inputId !== ADMIN_CREDENTIALS.id || inputPass !== ADMIN_CREDENTIALS.password) {
+      alert('管理者IDまたはパスワードが正しくありません'); return;
+    }
+    helperName = '管理者';
+    isAdminMode = true;
+  } else {
+    // ヘルパーログイン
+    const sel = document.getElementById('login-helper');
+    if (!sel.value) { alert('ヘルパー名を選択してください'); return; }
+    helperName = sel.value;
+    isAdminMode = false;
+  }
+
   document.getElementById('list-helper-name').textContent = helperName + (isAdminMode ? '（管理者）' : '');
   document.getElementById('admin-bar').style.display = isAdminMode ? 'flex' : 'none';
   selectedDate = new Date();
