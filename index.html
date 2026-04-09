@@ -214,7 +214,27 @@ body {
   padding: 3px 10px;
   border-radius: 20px;
 }
-.visit-card.done .service-tag { background: #eee; color: #999; }
+/* 送信済み：変更なし → オレンジで確定表示 */
+.visit-card.done .service-tag {
+  background: #FFF3E0;
+  color: #E65100;
+  border: 1px solid #FF9800;
+}
+/* 送信済み：変更あり → 元のコード + 矢印 + 新コード */
+.visit-card.done .service-original {
+  display: inline-block;
+  font-size: 0.75rem;
+  color: #999;
+  text-decoration: line-through;
+  margin-right: 4px;
+}
+.visit-card.done .service-arrow {
+  display: inline-block;
+  font-size: 0.8rem;
+  color: #E65100;
+  font-weight: 700;
+  margin-right: 4px;
+}
 .visit-card .arrow { font-size: 1.5rem; color: #ccc; }
 .visit-card .done-badge {
   background: #4CAF50;
@@ -1064,7 +1084,7 @@ body {
   </div>
   <div class="btn-group">
     <button class="btn btn-primary" onclick="goToNextRecord()">次の記録へ &#9654;</button>
-    <button class="btn btn-secondary" onclick="goTo('screen-list')">一覧に戻る</button>
+    <button class="btn btn-secondary" onclick="renderVisitList(); goTo('screen-list')">一覧に戻る</button>
   </div>
 </div>
 
@@ -1137,6 +1157,20 @@ function renderVisitList() {
     const card = document.createElement('div');
     card.className = 'visit-card' + (v.done ? ' done' : '');
     card.onclick = () => openRecord(v.id);
+
+    // サービスタグの表示を分岐
+    let serviceHTML;
+    if (v.done && v.changedService && v.changedService !== v.service) {
+      // 送信済み＋変更あり：元 → 新（オレンジ）
+      serviceHTML = `<span class="service-original">${v.service}</span><span class="service-arrow">→</span><span class="service-tag">${v.changedService}</span>`;
+    } else if (v.done) {
+      // 送信済み＋変更なし：オレンジ確定表示
+      serviceHTML = `<span class="service-tag">${v.service}</span>`;
+    } else {
+      // 未送信：緑の通常表示
+      serviceHTML = `<span class="service-tag">${v.service}</span>`;
+    }
+
     card.innerHTML = `
       <div class="time-col">
         <div class="start">${v.start}</div>
@@ -1144,7 +1178,7 @@ function renderVisitList() {
       </div>
       <div class="info-col">
         <div class="client-name">${v.client}</div>
-        <span class="service-tag">${v.service}</span>
+        ${serviceHTML}
       </div>
       ${v.done ? '<span class="done-badge">送信済</span>' : '<span class="arrow">&#9654;</span>'}
     `;
@@ -1484,6 +1518,12 @@ function goToConfirm() {
 function doSubmit() {
   const v = VISITS[currentVisitId];
   v.done = true;
+
+  // サービスコード変更を保存
+  const changedService = document.getElementById('service-change').value;
+  if (changedService && changedService !== v.service) {
+    v.changedService = changedService;
+  }
 
   document.getElementById('done-client').textContent = v.client;
   document.getElementById('done-time').textContent =
