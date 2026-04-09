@@ -423,6 +423,80 @@ body {
   50% { opacity: 0.7; }
 }
 
+/* 指示に対する報告 */
+.instruction-report-box {
+  background: #FFF3E0;
+  border: 2px solid #FF9800;
+  border-radius: 14px;
+  padding: 16px;
+  min-height: 80px;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  margin-bottom: 8px;
+}
+.instruction-report-box:focus { border-color: #E65100; outline: none; }
+.instruction-report-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  margin-bottom: 6px;
+}
+.instruction-report-label .label-text {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #E65100;
+}
+.instruction-report-label .ai-badge {
+  background: #FF9800;
+  color: white;
+}
+
+/* サービスコード変更 */
+.service-change-area {
+  margin-top: 8px;
+}
+.service-change-toggle {
+  font-size: 0.85rem;
+  color: #2E7D32;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  display: inline-block;
+  padding: 4px 0;
+}
+.service-change-select {
+  display: none;
+  margin-top: 8px;
+  padding: 12px;
+  background: white;
+  border: 2px solid #2E7D32;
+  border-radius: 12px;
+}
+.service-change-select select {
+  width: 100%;
+  padding: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  background: #fafafa;
+  color: #333;
+  appearance: auto;
+}
+.service-change-select select:focus { border-color: #2E7D32; outline: none; }
+.service-changed-badge {
+  display: inline-block;
+  background: #FFF3E0;
+  color: #E65100;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 8px;
+  margin-left: 6px;
+}
+
 /* サ責報告 */
 .report-group {
   display: flex;
@@ -600,6 +674,23 @@ body {
     <div class="meta">
       <span id="rec-care-level">介護2</span>
       <span id="rec-support-type">居宅介護</span>
+    </div>
+    <div class="service-change-area">
+      <span class="service-change-toggle" onclick="toggleServiceChange()">サービス内容を変更</span>
+      <div class="service-change-select" id="service-change-panel">
+        <select id="service-change" onchange="applyServiceChange()">
+          <option value="">-- 変更なし --</option>
+          <option value="身体1">身体1（30分未満）</option>
+          <option value="身体2">身体2（30分〜1時間）</option>
+          <option value="身体3">身体3（1時間〜1.5時間）</option>
+          <option value="生活2">生活2（20分〜45分）</option>
+          <option value="生活3">生活3（45分以上）</option>
+          <option value="身体1・生活1">身体1・生活1</option>
+          <option value="身体2・生活1">身体2・生活1</option>
+          <option value="身体3・生活1">身体3・生活1</option>
+          <option value="身体1・生活2">身体1・生活2</option>
+        </select>
+      </div>
     </div>
   </div>
 
@@ -803,6 +894,14 @@ body {
       注意事項：左膝に痛みあり、移動時は手引き歩行で対応
     </div>
 
+    <!-- 指示に対する報告 -->
+    <div class="instruction-report-label">
+      <span class="label-text">指示に対する報告</span>
+      <span class="ai-badge">AI自動生成</span>
+    </div>
+    <div class="instruction-report-box" contenteditable="true" id="instruction-report-text">指示通り実施。移動介助は手引き歩行にて対応、左膝の痛みの訴えなし。口腔ケア・排泄介助とも問題なく実施。昼食の調理・居室の掃除も完了。</div>
+    <div class="voice-btn" onclick="toggleVoiceFor('instruction-report-text')" style="margin-top:6px; padding:10px; font-size:0.9rem;">&#127908; 音声で報告を入力</div>
+
     <!-- ============================================
          バイタル（血圧・脈・体温・SpO2）
          ============================================ -->
@@ -902,6 +1001,16 @@ body {
       </div>
     </div>
 
+    <div class="confirm-section" id="cf-service-change-section" style="display:none;">
+      <h3>サービス変更</h3>
+      <div id="cf-service-change" class="value" style="color:#E65100; font-weight:700;"></div>
+    </div>
+
+    <div class="confirm-section">
+      <h3>指示に対する報告</h3>
+      <div id="cf-instruction-report" style="line-height:1.7;"></div>
+    </div>
+
     <div class="confirm-section">
       <h3>利用者の訴え</h3>
       <div id="cf-complaint" class="value">なし</div>
@@ -990,8 +1099,18 @@ const PREDICTED_CHECKS = {
   4: { "body-checks": ["移動", "移乗", "更衣（上）", "更衣（下）", "食事", "整容（口腔）"], "bath-checks": ["シャワー"], "toilet-checks": ["排尿・便"], "hibiriha-flag-checks": [], "hibiriha-checks": [], "life-checks": ["掃除"] },
 };
 
+// 指示に対する報告のAI予測
+const AI_INSTRUCTION_REPORTS = {
+  0: "指示通り実施。移動介助は手引き歩行にて対応、左膝の痛みの訴えなし。口腔ケア・排泄介助とも問題なく実施。昼食の調理・居室の掃除も完了。",
+  1: "指示通り実施。移乗介助は声かけの上対応、車椅子への移乗スムーズ。更衣介助（上下）、排泄介助、入浴介助とも問題なく実施。居室・トイレの掃除完了。",
+  2: "指示通り実施。入浴前バイタル測定実施（血圧正常範囲内）。シャワー浴にて全身清潔保持。更衣・整容も問題なく実施。",
+  3: "指示通り実施。夕食の下ごしらえ含む調理、洗濯（干す・取り込み）、居室の掃除完了。冷蔵庫内の賞味期限切れ確認済み、該当なし。",
+  4: "指示通り実施。移動・移乗は健側から介助、転倒なし。排泄介助、シャワー浴にて入浴介助完了。更衣介助、居室の掃除も実施。",
+};
+
 let currentVisitId = 0;
 let helperName = "";
+let originalService = ""; // 元のサービスコードを保持
 
 // ===== 画面遷移 =====
 function goTo(screenId) {
@@ -1048,9 +1167,19 @@ function openRecord(id) {
   document.getElementById('rec-care-level').textContent = v.careLevel;
   document.getElementById('rec-support-type').textContent = v.supportType;
   document.getElementById('instruction-box').innerHTML = (v.instruction || '').replace(/\n/g, '<br>');
+  document.getElementById('instruction-report-text').textContent = AI_INSTRUCTION_REPORTS[id] || '';
   document.getElementById('actual-start').value = v.start;
   document.getElementById('actual-end').value = v.end;
   document.getElementById('note-text').textContent = AI_NOTES[id] || '';
+
+  // サービスコード変更リセット
+  originalService = v.service;
+  document.getElementById('service-change').value = '';
+  document.getElementById('service-change-panel').style.display = 'none';
+  document.getElementById('rec-service').textContent = v.service;
+  // 変更バッジがあれば削除
+  const existBadge = document.getElementById('rec-service').parentElement.querySelector('.service-changed-badge');
+  if (existBadge) existBadge.remove();
 
   // チェック項目リセット・予測ON
   const pred = PREDICTED_CHECKS[id] || {};
@@ -1236,6 +1365,30 @@ function selectKinyuKubun(el) {
   document.getElementById('fusoku-count-row').style.display = isFusoku ? 'block' : 'none';
 }
 
+// ===== サービスコード変更 =====
+function toggleServiceChange() {
+  const panel = document.getElementById('service-change-panel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function applyServiceChange() {
+  const sel = document.getElementById('service-change');
+  const serviceEl = document.getElementById('rec-service');
+  // 既存の変更バッジを削除
+  const existBadge = serviceEl.parentElement.querySelector('.service-changed-badge');
+  if (existBadge) existBadge.remove();
+
+  if (sel.value) {
+    serviceEl.textContent = sel.value;
+    const badge = document.createElement('span');
+    badge.className = 'service-changed-badge';
+    badge.textContent = '変更';
+    serviceEl.parentElement.appendChild(badge);
+  } else {
+    serviceEl.textContent = originalService;
+  }
+}
+
 function selectMeasure(el) {
   el.parentElement.querySelectorAll('.weather-btn').forEach(b => b.classList.remove('selected'));
   el.classList.add('selected');
@@ -1254,7 +1407,23 @@ function goToConfirm() {
   document.getElementById('cf-date').textContent = '4/5（土）';
   document.getElementById('cf-time').textContent =
     document.getElementById('actual-start').value + ' - ' + document.getElementById('actual-end').value;
-  document.getElementById('cf-service').textContent = v.service;
+  // サービスコード（変更があれば変更後を表示）
+  const changedService = document.getElementById('service-change').value;
+  const actualService = changedService || v.service;
+  document.getElementById('cf-service').textContent = actualService;
+
+  // サービス変更セクション
+  const cfChangeSection = document.getElementById('cf-service-change-section');
+  if (changedService && changedService !== v.service) {
+    cfChangeSection.style.display = 'block';
+    document.getElementById('cf-service-change').textContent = v.service + ' → ' + changedService;
+  } else {
+    cfChangeSection.style.display = 'none';
+  }
+
+  // 指示に対する報告
+  document.getElementById('cf-instruction-report').textContent =
+    document.getElementById('instruction-report-text').textContent || 'なし';
 
   const weather = document.querySelector('.weather-btn.selected');
   document.getElementById('cf-weather').textContent = weather ? weather.textContent : '';
