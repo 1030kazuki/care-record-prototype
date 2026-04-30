@@ -1,5 +1,5 @@
 // ===== Service Worker: 介護実施記録アプリ PWA =====
-const CACHE_NAME = 'care-record-v1';
+const CACHE_NAME = 'care-record-v2-20260501';
 
 self.addEventListener('install', event => {
   self.skipWaiting();

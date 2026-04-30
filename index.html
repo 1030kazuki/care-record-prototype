@@ -1055,6 +1055,7 @@ body {
       <div class="check-item" onclick="toggleCheck(this)">飲水</div>
       <div class="check-item" onclick="toggleCheck(this)">内服</div>
       <div class="check-item" onclick="toggleCheck(this)">軟膏</div>
+      <div class="check-item" onclick="toggleCheck(this)">点眼</div>
       <div class="check-item" onclick="toggleCheck(this)">整容（口腔）</div>
       <div class="check-item" onclick="toggleCheck(this)">整容（爪）</div>
       <div class="check-item" onclick="toggleCheck(this)">整容（耳）</div>
@@ -1262,6 +1263,12 @@ body {
     <div style="font-size:0.8rem; color:#888; margin-bottom:6px;">（転倒、体調変化など、前回と異なる点）</div>
     <div class="note-box" contenteditable="true" id="note-text">前回同様、落ち着いて過ごされている。室内の片付けは奥様と協力して対応。移動時のふらつきなく、口腔ケアも問題なく実施。</div>
 
+    <!-- ★ よく使う表現（自動学習・3回以上使用された表現が表示される） -->
+    <div id="frequent-phrases-section" style="display:none; margin-bottom:8px;">
+      <div style="font-size:0.8rem; color:#2E7D32; margin-bottom:4px; font-weight:600;">⭐ よく使う表現（自動学習）</div>
+      <div class="template-group" id="frequent-phrases-group"></div>
+    </div>
+
     <div class="template-group">
       <div class="template-btn" onclick="addTemplate(this, '安定している。')">安定している</div>
       <div class="template-btn" onclick="addTemplate(this, '穏やかに過ごされている。')">穏やかに過ごす</div>
@@ -1273,6 +1280,9 @@ body {
       <div class="template-btn" onclick="addTemplate(this, '元気がない様子。')">元気がない</div>
       <div class="template-btn" onclick="addTemplate(this, '転倒あり。')">転倒あり</div>
       <div class="template-btn" onclick="addTemplate(this, '体調変化あり。')">体調変化</div>
+      <div class="template-btn" onclick="addTemplate(this, '入浴後に保湿。')">入浴後に保湿</div>
+      <div class="template-btn" onclick="addTemplate(this, '便失禁あり。')">便失禁あり</div>
+      <div class="template-btn" onclick="addTemplate(this, '尿失禁あり。')">尿失禁あり</div>
     </div>
 
     <div class="voice-btn" id="voice-btn" onclick="toggleVoice()">
@@ -1809,8 +1819,103 @@ function addTemplate(el, text) {
   } else {
     el.classList.add('added');
     noteEl.textContent = noteEl.textContent.trim() + ' ' + text;
+    // ★ 利用回数をカウント（よく使う表現の自動学習）
+    incrementPhraseCount(text);
   }
 }
+
+// ===== ★ よく使う表現の自動学習 =====
+//   - 留意事項・特記事項で繰り返し使われた表現を自動で抽出して上部に表示
+//   - 3回以上使用された表現が「よく使う表現」として浮上
+//   - localStorage に保存（端末ごと）
+const FREQUENT_PHRASES_KEY = 'care-record-frequent-phrases';
+const PHRASE_THRESHOLD = 3;       // 3回以上使ったら表示
+const PHRASE_DISPLAY_MAX = 8;     // 上位8件まで表示
+const PHRASE_MIN_LENGTH = 3;      // 最低3文字以上の文を学習対象
+const PHRASE_MAX_LENGTH = 30;     // 30文字以内の文だけ学習対象
+
+function loadFrequentPhrases() {
+  try {
+    const raw = localStorage.getItem(FREQUENT_PHRASES_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+
+function saveFrequentPhrases(obj) {
+  try { localStorage.setItem(FREQUENT_PHRASES_KEY, JSON.stringify(obj)); } catch (e) {}
+}
+
+function incrementPhraseCount(phrase) {
+  if (!phrase) return;
+  const p = phrase.trim();
+  if (p.length < PHRASE_MIN_LENGTH || p.length > PHRASE_MAX_LENGTH) return;
+  const data = loadFrequentPhrases();
+  if (!data[p]) data[p] = { count: 0, lastUsed: null };
+  data[p].count += 1;
+  data[p].lastUsed = new Date().toISOString();
+  saveFrequentPhrases(data);
+  renderFrequentPhrases();
+}
+
+// note-text の自由記述から学習対象の文を抽出して登録
+//   送信時 or 確認画面遷移時に呼ぶ
+function learnFromNoteText() {
+  const noteEl = document.getElementById('note-text');
+  if (!noteEl) return;
+  const text = (noteEl.textContent || '').trim();
+  if (!text) return;
+  // 既知の定型句を取得（2重カウントを避けるため。クリック時にもカウント済み）
+  const knownTemplates = Array.from(document.querySelectorAll('.template-btn'))
+    .map(b => {
+      const m = (b.getAttribute('onclick') || '').match(/addTemplate\(this,\s*'([^']+)'\)/);
+      return m ? m[1].trim() : '';
+    })
+    .filter(Boolean);
+  // 「。」で区切って各文を学習（全角／半角ピリオド両対応）
+  const sentences = text.split(/[。．\n]/).map(s => s.trim()).filter(Boolean);
+  sentences.forEach(s => {
+    let phrase = s;
+    if (!phrase.endsWith('。')) phrase += '。';
+    if (knownTemplates.includes(phrase)) return; // 既存定型句はクリック時カウント済み
+    if (phrase.length < PHRASE_MIN_LENGTH || phrase.length > PHRASE_MAX_LENGTH) return;
+    const data = loadFrequentPhrases();
+    if (!data[phrase]) data[phrase] = { count: 0, lastUsed: null };
+    data[phrase].count += 1;
+    data[phrase].lastUsed = new Date().toISOString();
+    saveFrequentPhrases(data);
+  });
+  renderFrequentPhrases();
+}
+
+// よく使う表現を上位順で描画（しきい値超えのみ）
+function renderFrequentPhrases() {
+  const section = document.getElementById('frequent-phrases-section');
+  const group = document.getElementById('frequent-phrases-group');
+  if (!section || !group) return;
+  const data = loadFrequentPhrases();
+  const list = Object.entries(data)
+    .filter(([_, v]) => v.count >= PHRASE_THRESHOLD)
+    .sort((a, b) => {
+      if (b[1].count !== a[1].count) return b[1].count - a[1].count;
+      return new Date(b[1].lastUsed || 0) - new Date(a[1].lastUsed || 0);
+    })
+    .slice(0, PHRASE_DISPLAY_MAX);
+
+  if (list.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  group.innerHTML = list.map(([phrase, info]) => {
+    const safe = phrase.replace(/'/g, "\\'");
+    // 表示用ラベル：末尾の「。」を取り除いて短縮
+    const label = phrase.replace(/。$/, '');
+    return `<div class="template-btn" onclick="addTemplate(this, '${safe}')" title="使用回数: ${info.count}回">${label} <span style="color:#2E7D32;font-size:0.7rem;font-weight:700">×${info.count}</span></div>`;
+  }).join('');
+}
+
+// ページロード時に既存の学習済みフレーズを描画
+document.addEventListener('DOMContentLoaded', () => { try { renderFrequentPhrases(); } catch(e){} });
 
 // ===== 音声入力（Web Speech API） =====
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1961,6 +2066,8 @@ function selectReport(el, showDetail) {
 
 // ===== 画面④ 確認 =====
 function goToConfirm() {
+  // ★ 確認画面へ進む際に、留意事項・特記事項の自由記述から頻出フレーズを学習
+  try { learnFromNoteText(); } catch (e) { console.warn('learnFromNoteText error:', e); }
   const v = VISITS[currentVisitId];
   document.getElementById('cf-client').textContent = v.client;
   document.getElementById('cf-date').textContent = formatDateShort(selectedDate);
